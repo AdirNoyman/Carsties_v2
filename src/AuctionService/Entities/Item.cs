@@ -1,7 +1,11 @@
 
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace AuctionService.Entities
 {
+
+    [Table("Items")]
     public class Item
     {
         public Guid Id { get; set; }
@@ -10,7 +14,7 @@ namespace AuctionService.Entities
         // The year the car was manufactured
         public int Year { get; set; }
         public string Color { get; set; }
-        public int Milage { get; set; }
+        public int Mileage { get; set; }
         public string ImageUrl { get; set; }
 
         // nav properties set the connection between the two tables (Item and Auction)
