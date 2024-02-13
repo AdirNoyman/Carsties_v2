@@ -18,6 +18,15 @@ builder.Services.AddDbContext<AuctionDBContext>(options =>
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddMassTransit(x =>
 {
+    x.AddEntityFrameworkOutbox<AuctionDBContext>(o =>
+    {
+        // If the Auction created and Rabbit is avaialble, send the event to Rabbit immditalty, but if not, retry sending every 10 seconds
+        o.QueryDelay = TimeSpan.FromSeconds(10);
+        o.UsePostgres();
+        o.UseBusOutbox();
+    }
+    );
+
     // Connect to the RabbitMQ service through localhost
     x.UsingRabbitMq((context, cfg) =>
     {

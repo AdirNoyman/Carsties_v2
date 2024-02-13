@@ -3,6 +3,8 @@ using AuctionService.DTOs;
 using AuctionService.Entities;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Contracts;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,11 +16,13 @@ namespace AuctionService.Controllers
     {
         private readonly AuctionDBContext _context;
         private readonly IMapper _mapper;
+        private readonly IPublishEndpoint _publishEndpoint;
 
-        public AuctionsController(AuctionDBContext context, IMapper mapper)
+        public AuctionsController(AuctionDBContext context, IMapper mapper, IPublishEndpoint publishEndpoint)
         {
             _context = context;
             _mapper = mapper;
+            _publishEndpoint = publishEndpoint;
         }
 
         [HttpGet]
@@ -52,12 +56,16 @@ namespace AuctionService.Controllers
             // TODO: add current user as seller
             _context.Auctions.Add(auction);
 
+            // Create an AuctionDto that will publish to RabbitMq
+            var newAuction = _mapper.Map<AuctionDto>(auction);
+            // Map the auction dto to the Contracts auction created dto
+            await _publishEndpoint.Publish(_mapper.Map<AuctionCreated>(newAuction));
+
             var result = await _context.SaveChangesAsync() > 0;
+
             if (!result) return BadRequest("Couldn't save changes to DB - creating auction failed 😫");
 
-            var auctionDto = _mapper.Map<AuctionDto>(auction);
-
-            return CreatedAtAction(nameof(GetAuction), new { id = auction.Id }, auctionDto);
+            return CreatedAtAction(nameof(GetAuction), new { id = auction.Id }, newAuction);
         }
 
         [HttpPut("{id}")]
