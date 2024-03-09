@@ -24,6 +24,17 @@ builder.Services.AddMassTransit(x =>
     // Connect to the RabbitMQ service through localhost
     x.UsingRabbitMq((context, cfg) =>
     {
+
+        cfg.ReceiveEndpoint("search-auction-created", e =>
+        {
+
+            // Retry the message 5 times with a 5 second interval
+            e.UseMessageRetry(r => r.Interval(5, 5));
+
+            e.ConfigureConsumer<AuctionCreatedConsumer>(context);
+
+        });
+
         cfg.ConfigureEndpoints(context);
     });
 });
